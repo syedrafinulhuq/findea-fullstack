@@ -1,0 +1,7 @@
+{
+  "name": "findea-fullstack",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Services built independently via experimentalServices'"
+  }
+}
