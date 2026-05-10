@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Playfair_Display } from 'next/font/google';
@@ -41,6 +42,7 @@ const statusLabel: Record<string, string> = {
 };
 
 const MyOrdersPage = () => {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -76,6 +78,40 @@ const MyOrdersPage = () => {
       setCancellingId(null);
     }
   }, []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    router.push("/login");
+  }, [router]);
+
+  const [nlEmail, setNlEmail] = useState("");
+  const [nlStatus, setNlStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [nlMessage, setNlMessage] = useState('');
+
+  const handleNewsletterSubmit = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    setNlStatus('loading');
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: nlEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNlStatus('success');
+        setNlMessage('Thank you for subscribing!');
+        setNlEmail('');
+      } else {
+        setNlStatus('error');
+        setNlMessage(data.message ?? 'Something went wrong.');
+      }
+    } catch {
+      setNlStatus('error');
+      setNlMessage('Unable to subscribe. Please try again.');
+    }
+  }, [nlEmail]);
 
   const toggleDropdown = (name: string) => {
     setOpenDropdown(openDropdown === name ? "" : name);
@@ -223,7 +259,7 @@ const MyOrdersPage = () => {
             <button className="w-full bg-[#e5e1da] text-black font-bold py-4 px-6 text-[13px] uppercase tracking-wider text-left border border-[#cfcbc4]">Mes listes</button>
             <button className="w-full bg-[#e5e1da] text-black font-bold py-4 px-6 text-[13px] uppercase tracking-wider text-left border border-[#cfcbc4]">Gérer les adresses</button>
             <button className="w-full bg-[#e5e1da] text-black font-bold py-4 px-6 text-[13px] uppercase tracking-wider text-left border border-[#cfcbc4]">Modes de paiement</button>
-            <button className="w-full bg-[#e5e1da] text-black font-bold py-4 px-6 text-[13px] uppercase tracking-wider text-left border border-[#cfcbc4]">Déconnexion</button>
+            <button onClick={handleLogout} className="w-full bg-[#e5e1da] text-black font-bold py-4 px-6 text-[13px] uppercase tracking-wider text-left border border-[#cfcbc4]">Déconnexion</button>
           </aside>
 
           <section className="w-full md:w-3/4 space-y-10">
@@ -407,10 +443,11 @@ const MyOrdersPage = () => {
           <div className="relative z-10 text-center px-6 w-full max-w-lg">
             <h2 className="text-white text-3xl tracking-[0.1em] uppercase mb-4 leading-tight">ENTREZ DANS NOTRE UNIVERS</h2>
             <p className="text-white text-[15px] italic mb-10 leading-relaxed tracking-wide">Découvrez En Avant-Première Nos Nouvelles Collections Et Nos Trésors Exclusifs.</p>
-            <div className="flex items-stretch justify-center gap-3 w-full h-[56px]">
-              <input type="email" placeholder="Your Email" className="flex-grow min-w-0 bg-transparent border border-white px-5 text-white placeholder:text-white/60 focus:outline-none text-base" />
-              <button className="flex-shrink-0 px-6 h-full bg-[#f2e6cf] text-black font-bold uppercase tracking-widest text-[12px] transition-all hover:bg-[#e9dab9] whitespace-nowrap">S&apos;abonner</button>
-            </div>
+            <form onSubmit={handleNewsletterSubmit} className="flex items-stretch justify-center gap-3 w-full h-[56px]">
+              <input type="email" placeholder="Your Email" value={nlEmail} onChange={(e) => setNlEmail(e.target.value)} required disabled={nlStatus === 'loading'} className="flex-grow min-w-0 bg-transparent border border-white px-5 text-white placeholder:text-white/60 focus:outline-none text-base" />
+              <button type="submit" disabled={nlStatus === 'loading'} className="flex-shrink-0 px-6 h-full bg-[#f2e6cf] text-black font-bold uppercase tracking-widest text-[12px] transition-all hover:bg-[#e9dab9] whitespace-nowrap disabled:opacity-60">{nlStatus === 'loading' ? '…' : "S'abonner"}</button>
+            </form>
+            {nlMessage && <p className={`mt-3 text-sm ${nlStatus === 'success' ? 'text-[#f2e6cf]' : 'text-red-300'}`}>{nlMessage}</p>}
           </div>
         </section>
 

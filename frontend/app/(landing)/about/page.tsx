@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Navbar from "../_components/Navbar";
@@ -8,8 +9,34 @@ import { ChevronLeft } from "lucide-react";
 import LandingTopAnnouncementBar from "../_components/LandingTopAnnouncementBar";
 
 const AboutPage = () => {
-  
   const router = useRouter();
+  const [nlEmail, setNlEmail] = useState("");
+  const [nlStatus, setNlStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [nlMessage, setNlMessage] = useState('');
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNlStatus('loading');
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: nlEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNlStatus('success');
+        setNlMessage('Thank you for subscribing!');
+        setNlEmail('');
+      } else {
+        setNlStatus('error');
+        setNlMessage(data.message ?? 'Something went wrong.');
+      }
+    } catch {
+      setNlStatus('error');
+      setNlMessage('Unable to subscribe. Please try again.');
+    }
+  };
 
   return (
     <main className="min-h-screen">
@@ -206,22 +233,29 @@ const AboutPage = () => {
           </p>
 
           {/* Subscription Form */}
-          <form className="flex flex-row items-center justify-center gap-2 md:gap-4 mx-auto w-full max-w-sm md:max-w-none">
+          <form onSubmit={handleNewsletterSubmit} className="flex flex-row items-center justify-center gap-2 md:gap-4 mx-auto w-full max-w-sm md:max-w-none">
             <div className="flex-1 md:w-96 md:flex-none">
               <input
                 type="email"
                 placeholder="Your Email"
-                className="w-full bg-transparent border border-[#F1E1C2] py-2 md:py-3 px-3 md:px-4 text-white placeholder:text-white/70 focus:outline-none focus:border-white transition-colors font-inter text-sm md:text-base"
+                value={nlEmail}
+                onChange={(e) => setNlEmail(e.target.value)}
                 required
+                disabled={nlStatus === 'loading'}
+                className="w-full bg-transparent border border-[#F1E1C2] py-2 md:py-3 px-3 md:px-4 text-white placeholder:text-white/70 focus:outline-none focus:border-white transition-colors font-inter text-sm md:text-base"
               />
             </div>
             <button
               type="submit"
-              className="bg-[#F1E1C2] text-black px-5 md:px-10 py-2 md:py-3 md:text-[19px] text-sm font-bold hover:bg-[#e5d8c1] transition-all tracking-wide shadow-lg font-playfair whitespace-nowrap"
+              disabled={nlStatus === 'loading'}
+              className="bg-[#F1E1C2] text-black px-5 md:px-10 py-2 md:py-3 md:text-[19px] text-sm font-bold hover:bg-[#e5d8c1] transition-all tracking-wide shadow-lg font-playfair whitespace-nowrap disabled:opacity-60"
             >
-              Subscribe
+              {nlStatus === 'loading' ? '...' : 'Subscribe'}
             </button>
           </form>
+          {nlMessage && (
+            <p className={`mt-4 text-sm font-playfair ${nlStatus === 'success' ? 'text-[#F1E1C2]' : 'text-red-300'}`}>{nlMessage}</p>
+          )}
         </div>
       </section>
       <Footer />

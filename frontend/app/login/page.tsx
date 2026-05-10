@@ -38,6 +38,34 @@ const MyAccountPage = () => {
   const [registerError, setRegisterError] = useState("");
   const [registerSuccess, setRegisterSuccess] = useState("");
 
+  const [nlEmail, setNlEmail] = useState("");
+  const [nlStatus, setNlStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [nlMessage, setNlMessage] = useState('');
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNlStatus('loading');
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: nlEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNlStatus('success');
+        setNlMessage('Thank you for subscribing!');
+        setNlEmail('');
+      } else {
+        setNlStatus('error');
+        setNlMessage(data.message ?? 'Something went wrong.');
+      }
+    } catch {
+      setNlStatus('error');
+      setNlMessage('Unable to subscribe. Please try again.');
+    }
+  };
+
   const toggleDropdown = (name: string) => {
     setOpenDropdown(openDropdown === name ? "" : name);
   };
@@ -364,16 +392,21 @@ const MyAccountPage = () => {
           <p className="text-white text-[15px] italic mb-10 leading-relaxed tracking-wide">
             Découvrez En Avant-Première Nos Nouvelles Collections Et Nos Trésors Exclusifs.
           </p>
-          <div className="flex items-stretch justify-center gap-3 w-full h-[56px]">
+          <form onSubmit={handleNewsletterSubmit} className="flex items-stretch justify-center gap-3 w-full h-[56px]">
             <input
               type="email"
               placeholder="Your Email"
+              value={nlEmail}
+              onChange={(e) => setNlEmail(e.target.value)}
+              required
+              disabled={nlStatus === 'loading'}
               className="flex-grow min-w-0 bg-transparent border border-white px-5 text-white placeholder:text-white/60 focus:outline-none text-base"
             />
-            <button className="flex-shrink-0 px-6 h-full bg-[#f2e6cf] text-black font-bold uppercase tracking-widest text-[12px] transition-all hover:bg-[#e9dab9] whitespace-nowrap">
-              Subscribe
+            <button type="submit" disabled={nlStatus === 'loading'} className="flex-shrink-0 px-6 h-full bg-[#f2e6cf] text-black font-bold uppercase tracking-widest text-[12px] transition-all hover:bg-[#e9dab9] whitespace-nowrap disabled:opacity-60">
+              {nlStatus === 'loading' ? '…' : 'Subscribe'}
             </button>
-          </div>
+          </form>
+          {nlMessage && <p className={`mt-3 text-sm ${nlStatus === 'success' ? 'text-[#f2e6cf]' : 'text-red-300'}`}>{nlMessage}</p>}
         </div>
       </section>
 

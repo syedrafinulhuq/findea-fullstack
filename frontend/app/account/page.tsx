@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,6 +20,7 @@ const playfair = Playfair_Display({
 
 
 const DashboardPage = () => {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState("");
 
@@ -118,6 +120,52 @@ const DashboardPage = () => {
       setPwLoading(false);
     }
   }, [currentPassword, newPassword, confirmPassword]);
+
+  useEffect(() => {
+    if (!profileSuccess) return;
+    const t = setTimeout(() => setProfileSuccess(""), 4000);
+    return () => clearTimeout(t);
+  }, [profileSuccess]);
+
+  useEffect(() => {
+    if (!pwSuccess) return;
+    const t = setTimeout(() => setPwSuccess(""), 4000);
+    return () => clearTimeout(t);
+  }, [pwSuccess]);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    router.push("/login");
+  }, [router]);
+
+  const [nlEmail, setNlEmail] = useState("");
+  const [nlStatus, setNlStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [nlMessage, setNlMessage] = useState('');
+
+  const handleNewsletterSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNlStatus('loading');
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: nlEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNlStatus('success');
+        setNlMessage('Thank you for subscribing!');
+        setNlEmail('');
+      } else {
+        setNlStatus('error');
+        setNlMessage(data.message ?? 'Something went wrong.');
+      }
+    } catch {
+      setNlStatus('error');
+      setNlMessage('Unable to subscribe. Please try again.');
+    }
+  }, [nlEmail]);
 
   const toggleDropdown = (name: string) => {
     setOpenDropdown(openDropdown === name ? "" : name);
@@ -281,7 +329,7 @@ const DashboardPage = () => {
       {/* --- MOBILE HORIZONTAL MENU --- */}
       <div className="md:hidden w-full overflow-x-auto flex gap-3 px-4 py-8 bg-transparent custom-scrollbar">
         {['Personal Info', 'My Orders', 'My Registries', 'Manage Address', 'Payment', 'Logout'].map((tab) => (
-          <button key={tab} className={`flex-shrink-0 px-6 py-4 text-[13px] uppercase font-bold whitespace-nowrap ${tab === 'Personal Info' ? 'bg-[#f2e6cf] border border-[#d3c7ad]' : 'bg-[#d1cbc1]'}`}>
+          <button key={tab} onClick={tab === 'Logout' ? handleLogout : undefined} className={`flex-shrink-0 px-6 py-4 text-[13px] uppercase font-bold whitespace-nowrap ${tab === 'Personal Info' ? 'bg-[#f2e6cf] border border-[#d3c7ad]' : 'bg-[#d1cbc1]'}`}>
             {tab}
           </button>
         ))}
@@ -296,7 +344,7 @@ const DashboardPage = () => {
             Personal Information
           </button>
           {["My Orders", "My Registries", "Manage Address", "Payment Method", "Logout"].map((item) => (
-            <button key={item} className="w-full bg-[#e5e1da] text-black font-bold py-4 px-6 text-[13px] uppercase tracking-wider text-left border border-[#cfcbc4]">
+            <button key={item} onClick={item === 'Logout' ? handleLogout : undefined} className="w-full bg-[#e5e1da] text-black font-bold py-4 px-6 text-[13px] uppercase tracking-wider text-left border border-[#cfcbc4]">
               {item}
             </button>
           ))}
@@ -403,16 +451,23 @@ const DashboardPage = () => {
         <div className="relative z-10 text-center px-6 w-full max-w-lg">
           <h2 className="text-white text-3xl font-serif tracking-[0.1em] uppercase mb-4 leading-tight">ENTREZ DANS NOTRE UNIVERS</h2>
           <p className="text-white text-[15px] font-serif italic mb-10 leading-relaxed tracking-wide">Découvrez En Avant-Première Nos Nouvelles Collections Et Nos Trésors Exclusifs.</p>
-          <div className="flex items-stretch justify-center gap-3 w-full h-[56px]">
+          <form onSubmit={handleNewsletterSubmit} className="flex items-stretch justify-center gap-3 w-full h-[56px]">
             <input
               type="email"
               placeholder="Your Email"
+              value={nlEmail}
+              onChange={(e) => setNlEmail(e.target.value)}
+              required
+              disabled={nlStatus === 'loading'}
               className="flex-grow min-w-0 bg-transparent border border-white px-5 text-white placeholder:text-white/60 focus:outline-none text-base"
             />
-            <button className="flex-shrink-0 px-6 h-full bg-[#f2e6cf] text-black font-bold uppercase tracking-widest text-[12px] transition-all hover:bg-[#e9dab9] whitespace-nowrap font-serif">
-              S&apos;abonner
+            <button type="submit" disabled={nlStatus === 'loading'} className="flex-shrink-0 px-6 h-full bg-[#f2e6cf] text-black font-bold uppercase tracking-widest text-[12px] transition-all hover:bg-[#e9dab9] whitespace-nowrap font-serif disabled:opacity-60">
+              {nlStatus === 'loading' ? '…' : "S'abonner"}
             </button>
-          </div>
+          </form>
+          {nlMessage && (
+            <p className={`mt-3 text-sm font-serif ${nlStatus === 'success' ? 'text-[#f2e6cf]' : 'text-red-300'}`}>{nlMessage}</p>
+          )}
         </div>
       </section>
 
