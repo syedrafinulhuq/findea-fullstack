@@ -82,8 +82,12 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center justify-end gap-3">
-          <Gift size={22} className="text-gray-900" />
-          <ShoppingCart size={22} className="text-gray-900" />
+          <Link href="/login" className="hover:opacity-60 transition-all">
+            <User size={22} className="text-gray-900" />
+          </Link>
+          <a href="#" className="hover:opacity-60 transition-all">
+            <ShoppingCart size={22} className="text-gray-900" />
+          </a>
         </div>
       </div>
 
@@ -176,12 +180,13 @@ const Navbar = () => {
                 );
               })}
               <li className="pt-4">
-                <a
-                  href="#"
+                <Link
+                  href="/login"
                   className="text-lg font-playfair tracking-widest text-[#1A1A1A]"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   Sign Up
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -210,9 +215,9 @@ const Navbar = () => {
         </div>
 
         <div className="flex-1 flex justify-end items-center gap-5 md:gap-7">
-          <a href="#" className="hover:opacity-60 transition-all">
+          <Link href="/login" className="hover:opacity-60 transition-all">
             <User size={22} className="text-gray-900" />
-          </a>
+          </Link>
           <a href="#" className="hover:opacity-60 transition-all">
             <Heart size={22} className="text-gray-900" />
           </a>
