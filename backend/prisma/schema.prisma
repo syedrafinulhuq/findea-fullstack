@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String
+  firstName            String?
+  lastName             String?
+  phone                String?
+  role                 Role      @default(CUSTOMER)
+  refreshTokenHash     String?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  addresses            Address[]
+  orders               Order[]
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  label      String?
+  line1      String
+  line2      String?
+  city       String
+  state      String?
+  postalCode String?
+  country    String   @default("Bangladesh")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String?
+  price       Decimal     @db.Decimal(10, 2)
+  stock       Int         @default(0)
+  imageUrl    String?
+  categoryId  String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  category    Category?   @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    String      @unique
+  userId         String?
+  customerEmail  String
+  customerName   String
+  customerPhone  String?
+  shippingLine1  String
+  shippingLine2  String?
+  shippingCity   String
+  shippingState  String?
+  shippingCountry String     @default("Bangladesh")
+  subtotal       Decimal     @db.Decimal(10, 2)
+  deliveryFee    Decimal     @db.Decimal(10, 2) @default(0)
+  total          Decimal     @db.Decimal(10, 2)
+  status         OrderStatus @default(PENDING)
+  cancelReason   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  user           User?       @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+  payment        Payment?
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("BDT")
+  status          PaymentStatus @default(PENDING)
+  provider        String        @default("flutterwave")
+  transactionRef  String        @unique
+  flutterwaveTxId String?
+  checkoutUrl     String?
+  rawResponse     Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
