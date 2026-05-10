@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
   try {
     const res = await fetch(`${apiUrl}/api/auth/forgot-password`, {
